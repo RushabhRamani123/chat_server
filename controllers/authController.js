@@ -1,10 +1,10 @@
 const jwt = require("jsonwebtoken");
 const otpGenerator = require("otp-generator");
-const mailService = require("../services/mailer");
+// const mailService = require("../services/mailer");
 const crypto = require("crypto");
 
 const filterObj = require("../utils/filterObj");
-
+const nodemailer = require("nodemailer");
 // Model
 const User = require("../models/user");
 const otp = require("../Templates/Mail/otp");
@@ -76,18 +76,44 @@ exports.sendOTP = async (req, res, next) => {
 
   console.log(new_otp);
 
-  // TODO send mail
-  mailService.sendEmail({
-    from: "shreyanshshah242@gmail.com",
-    to: user.email,
-    subject: "Verification OTP",
-    html: otp(user.firstName, new_otp),
-    attachments: [],
+  // let testAccount = await nodemailer.createTestAccount();
+  
+  let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'rushabhramani16@gmail.com',
+        pass: 'fkoc afsw zcli psue'
+    }
   });
+  console.log(user.email);
+  let message = {
+    from: 'rushabhramani16@gmail.com',
+    to:  'ytghjjlkjttfug@gmail.com',
+    subject: 'OTP for Email Verification',
+    text: 'Hello to myself!',
+    html: otp(user.firstName, new_otp),
+};
+
+  transporter.sendMail(message, (err) => {
+    if (err) {
+      console.log('Error occurred. ' + err.message);
+      return process.exit(1);
+    }
+  });
+  // TODO send mail
+  // mailService.sendEmail({
+  //   from: "shreyanshshah242@gmail.com",
+  //   to: user.email,
+  //   subject: "Verification OTP",
+  //   html: otp(user.firstName, new_otp),
+  //   attachments: [],
+  // });
 
   res.status(200).json({
     status: "success",
-    message: "OTP Sent Successfully!",
+    message: {
+      otp: new_otp,
+    },
   });
 };
 

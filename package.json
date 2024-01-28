@@ -28,6 +28,7 @@
     "mongodb": "^6.3.0",
     "mongoose": "^8.1.0",
     "morgan": "^1.10.0",
+    "nodemailer": "^6.9.8",
     "otp-generator": "^4.0.1",
     "react-comments-section": "^2.0.10",
     "routes": "^2.1.0",
