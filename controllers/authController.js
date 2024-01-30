@@ -10,7 +10,8 @@ const User = require("../models/user");
 const otp = require("../Templates/Mail/otp");
 
 // this function will return you jwt token
-const signToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET);
+// add time when the token will expire in the below function
+const signToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET , { expiresIn: "1d" });
 
 // Register New User
 
@@ -88,7 +89,7 @@ exports.sendOTP = async (req, res, next) => {
   console.log(user.email);
   let message = {
     from: 'rushabhramani16@gmail.com',
-    to:  'ytghjjlkjttfug@gmail.com',
+    to:user.email,
     subject: 'OTP for Email Verification',
     text: 'Hello to myself!',
     html: otp(user.firstName, new_otp),
