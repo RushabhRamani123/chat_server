@@ -32,6 +32,7 @@
     "otp-generator": "^4.0.1",
     "react-comments-section": "^2.0.10",
     "routes": "^2.1.0",
+    "socket.io": "^4.7.4",
     "xss": "^1.0.14",
     "xss-clean": "^0.1.4"
   }

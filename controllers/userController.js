@@ -2,7 +2,7 @@ const AudioCall = require("../models/audioCall");
 const FriendRequest = require("../models/friendRequest");
 const User = require("../models/user");
 const VideoCall = require("../models/videoCall");
-const catchAsync = require("../utils/catchAsync");
+const catchAsync = require("../utils/catchAsync.js");
 const filterObj = require("../utils/filterObj");
 
 const { generateToken04 } = require("./zegoServerAssistant");
