@@ -3,6 +3,7 @@ const otpGenerator = require("otp-generator");
 const mailService = require("../services/mailer");
 const crypto = require("crypto");
 
+const nodemailer = require("nodemailer");
 const filterObj = require("../utils/filterObj");
 
 // Model
@@ -14,12 +15,8 @@ const catchAsync = require("../utils/catchAsync.js");
 
 // this function will return you jwt token
 const signToken = (userId) => jwt.sign({ userId }, process.env.JWT_SECRET);
-
-// Register New User
-
 exports.register = catchAsync(async (req, res, next) => {
   const { firstName, lastName, email, password } = req.body;
-
   const filteredBody = filterObj(
     req.body,
     "firstName",
@@ -27,33 +24,21 @@ exports.register = catchAsync(async (req, res, next) => {
     "email",
     "password"
   );
-
-  // check if a verified user with given email exists
-
   const existing_user = await User.findOne({ email: email });
-
   if (existing_user && existing_user.verified) {
-    // user with this email already exists, Please login
     return res.status(400).json({
       status: "error",
       message: "Email already in use, Please login.",
     });
   } else if (existing_user) {
-    // if not verified than update prev one
-
     await User.findOneAndUpdate({ email: email }, filteredBody, {
       new: true,
       validateModifiedOnly: true,
     });
-
-    // generate an otp and send to email
     req.userId = existing_user._id;
     next();
   } else {
-    // if user is not created before than create a new one
     const new_user = await User.create(filteredBody);
-
-    // generate an otp and send to email
     req.userId = new_user._id;
     next();
   }
@@ -79,14 +64,36 @@ exports.sendOTP = catchAsync(async (req, res, next) => {
 
   console.log(new_otp);
 
-  // TODO send mail
-  mailService.sendEmail({
-    from: "shreyanshshah242@gmail.com",
-    to: user.email,
-    subject: "Verification OTP",
-    html: otp(user.firstName, new_otp),
-    attachments: [],
+  let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'rushabhramani16@gmail.com',
+        pass: 'fkoc afsw zcli psue'
+    }
   });
+  console.log(user.email);
+  let message = {
+    from: 'rushabhramani16@gmail.com',
+    to:user.email,
+    subject: 'OTP for Email Verification',
+    text: 'Hello to myself!',
+    html: otp(user.firstName, new_otp),
+};
+
+  transporter.sendMail(message, (err) => {
+    if (err) {
+      console.log('Error occurred. ' + err.message);
+      return process.exit(1);
+    }
+  });
+  
+  // mailService.sendEmail({
+  //   from: "shreyanshshah242@gmail.com",
+  //   to: user.email,
+  //   subject: "Verification OTP",
+  //   html: otp(user.firstName, new_otp),
+  //   attachments: [],
+  // });
 
   res.status(200).json({
     status: "success",
