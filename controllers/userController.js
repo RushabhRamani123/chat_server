@@ -46,15 +46,16 @@ exports.getUsers = catchAsync(async (req, res, next) => {
   }).select("firstName lastName _id");
 
   const this_user = req.user;
-
+  
   const remaining_users = all_users.filter(
     (user) =>
-      // this_user.friends.includes(user._id) &&
+      this_user.friends.includes(user._id) &&
       user._id.toString() !== req.user._id.toString()
   );
-
+    console.log(remaining_users);
   res.status(200).json({
     status: "success",
+    fr: this_user.friends,
     id: req.user._id,
     data: remaining_users,
     message: "Users found successfully!",

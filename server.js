@@ -4,8 +4,8 @@ const dotenv = require("dotenv");
 dotenv.config({ path: "./.env" });
 
 process.on("uncaughtException", (err) => {
-  //console.log(err);
-  //console.log("UNCAUGHT Exception! Shutting down ...");
+  console.log(err);
+  console.log("UNCAUGHT Exception! Shutting down ...");
   process.exit(1); // Exit Code 1 indicates that a container shut down, either because of an application failure.
 });
 
@@ -26,14 +26,14 @@ const VideoCall = require("./models/videoCall");
 // Create an io server and allow for CORS from http://localhost:3000 with GET and POST methods
 const io = new Server(server, {
   cors: {
-    origin: "*",
+    origin: "http://localhost:3001",
     methods: ["GET", "POST"],
   },
 });
-
+//mongodb+srv://rushabhramani123:<password>@
 mongoose.connect
   (
-    `mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_PASSWORD}@cluster1.usgm9re.mongodb.net/?retryWrites=true&w=majority`
+    `mongodb+srv://${process.env.MONGO_DB_USER}:${process.env.MONGO_DB_PASSWORD}@chatapplication.gyrz9ha.mongodb.net/?retryWrites=true&w=majority`
   ,{})
   .then(() => { console.log("Database connected"); })
   .catch((err) => { console.log(err); });
@@ -42,33 +42,33 @@ mongoose.connect
 const port = process.env.PORT || 8000;
 
 server.listen(port, () => {
-  //console.log(`App running on port ${port} ...`);
+  console.log(`App running on port ${port} ...`);
 });
+
 // Add this
 // Listen for when the client connects via socket.io-client
 io.on("connection", async (socket) => {
   // console.log(JSON.stringify(socket.handshake.query));
-  // console.log("Connected");
-  const user_id = socket.handshake.query["user_id"];
+  // const user_id = socket.handshake.query["user_id"];
+  // console.log("USER ID",user_id);
+  // console.log(`User connected ${socket.id}`);
 
-  // // //console.log(`User connected ${socket.id}`);
-
-  if (user_id != null && Boolean(user_id)) {
-    try {
-      User.findByIdAndUpdate(user_id, {
-        socket_id: socket.id,
-        status: "Online",
-      });
-    } catch (e) {
-      console.log(e);
-    }
-  }
+  // if (user_id != null && Boolean(user_id)) {
+  //   try {
+  //     User.findByIdAndUpdate(user_id, {
+  //       socket_id: socket.id,
+  //       status: "Online",
+  //     });
+  //   } catch (e) {
+  //     console.log(e);
+  //   }
+  // }
 
   // We can write our socket event listeners in here...
   socket.on("friend_request", async (data) => {
     const to = await User.findById(data.to).select("socket_id");
     const from = await User.findById(data.from).select("socket_id");
-    // console.log(to, from);
+      console.log(data.to, "TO AND FROM");
     // create a friend request
     await FriendRequest.create({
       sender: data.from,
@@ -83,81 +83,80 @@ io.on("connection", async (socket) => {
     });
   });
 
-  // socket.on("accept_request", async (data) => {
-  //   // accept friend request => add ref of each other in friends array
-  //   // //console.log(data);
-  //   const request_doc = await FriendRequest.findById(data.request_id);
+  socket.on("accept_request", async (data) => {
+    // accept friend request => add ref of each other in friends array
+    console.log(data);
+    const request_doc = await FriendRequest.findById(data.request_id);
 
-  //   // //console.log(request_doc);
+    console.log(request_doc);
 
-  //   const sender = await User.findById(request_doc.sender);
-  //   const receiver = await User.findById(request_doc.recipient);
+    const sender = await User.findById(request_doc.sender);
+    const receiver = await User.findById(request_doc.recipient);
+    console.log(" RECEIVER "+receiver);
+    console.log(" SENDER "+sender);
 
-  //   sender.friends.push(request_doc.recipient);
-  //   receiver.friends.push(request_doc.sender);
+    sender.friends.push(request_doc.recipient);
+    receiver.friends.push(request_doc.sender);
 
-  //   await receiver.save({ new: true, validateModifiedOnly: true });
-  //   await sender.save({ new: true, validateModifiedOnly: true });
+    await receiver.save({ new: true, validateModifiedOnly: true });
+    await sender.save({ new: true, validateModifiedOnly: true });
 
-  //   await FriendRequest.findByIdAndDelete(data.request_id);
+    await FriendRequest.findByIdAndDelete(data.request_id);
 
-  //   // delete this request doc
-  //   // emit event to both of them
-
-  //   // emit event request accepted to both
-  //   io.to(sender?.socket_id).emit("request_accepted", {
-  //     message: "Friend Request Accepted",
-  //   });
-  //   io.to(receiver?.socket_id).emit("request_accepted", {
-  //     message: "Friend Request Accepted",
-  //   });
-  // });
+    io.to(sender?.socket_id).emit("request_accepted", {
+      message: "Friend Request Accepted",
+    });
+    io.to(receiver?.socket_id).emit("request_accepted", {
+      message: "Friend Request Accepted",
+    });
+  });
 
   // socket.on("get_direct_conversations", async ({ user_id }, callback) => {
+
   //   const existing_conversations = await OneToOneMessage.find({
   //     participants: { $all: [user_id] },
   //   }).populate("participants", "firstName lastName avatar _id email status");
 
   //   // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
 
-  //   // //console.log(existing_conversations);
+  //   console.log(existing_conversations);
 
   //   callback(existing_conversations);
   // });
 
-  // socket.on("start_conversation", async (data) => {
-  //   // data: {to: from:}
+  socket.on("start_conversation", async (data) => {
+    // data: {to: from:}
 
-  //   const { to, from } = data;
+    const { to, from } = data;
 
-  //   // check if there is any existing conversation
+    // check if there is any existing conversation
+    console.log(to, from);
+    const existing_conversations = await OneToOneMessage.find({
+      participants: { $size: 2, $all: [to, from] },
+    }).populate("participants", "firstName lastName _id email status");
 
-  //   const existing_conversations = await OneToOneMessage.find({
-  //     participants: { $size: 2, $all: [to, from] },
-  //   }).populate("participants", "firstName lastName _id email status");
+    console.log(existing_conversations, "Existing Conversation");
 
-  //   // //console.log(existing_conversations[0], "Existing Conversation");
+    // if no => create a new OneToOneMessage doc & emit event "start_chat" & send conversation details as payload
+    if (existing_conversations.length === 0) {
+      let new_chat = await OneToOneMessage.create({
+        participants: [to, from],
+      });
 
-  //   // if no => create a new OneToOneMessage doc & emit event "start_chat" & send conversation details as payload
-  //   if (existing_conversations.length === 0) {
-  //     let new_chat = await OneToOneMessage.create({
-  //       participants: [to, from],
-  //     });
+      new_chat = await OneToOneMessage.findById(new_chat).populate(
+        "participants",
+        "firstName lastName _id email status"
+      );
 
-  //     new_chat = await OneToOneMessage.findById(new_chat).populate(
-  //       "participants",
-  //       "firstName lastName _id email status"
-  //     );
+      console.log(new_chat);
 
-  //     // //console.log(new_chat);
-
-  //     socket.emit("start_chat", new_chat);
-  //   }
-  //   // if yes => just emit event "start_chat" & send conversation details as payload
-  //   else {
-  //     socket.emit("start_chat", existing_conversations[0]);
-  //   }
-  // });
+      socket.emit("start_chat", new_chat);
+    }
+    // // if yes => just emit event "start_chat" & send conversation details as payload
+    else {
+      socket.emit("start_chat", existing_conversations[0]);
+    }
+  });
 
   // socket.on("get_messages", async (data, callback) => {
   //   try {
@@ -166,13 +165,13 @@ io.on("connection", async (socket) => {
   //     ).select("messages");
   //     callback(messages);
   //   } catch (error) {
-  //     // //console.log(error);
+  //     console.log(error);
   //   }
   // });
 
   // // Handle incoming text/link messages
   // socket.on("text_message", async (data) => {
-  //   // //console.log("Received message:", data);
+  //   console.log("Received message:", data);
 
   //   // data: {to, from, text}
 
@@ -213,7 +212,7 @@ io.on("connection", async (socket) => {
 
   // // handle Media/Document Message
   // socket.on("file_message", (data) => {
-  //   // //console.log("Received message:", data);
+  //   console.log("Received message:", data);
 
   //   // data: {to, from, text, file}
 
@@ -245,7 +244,7 @@ io.on("connection", async (socket) => {
   //   const to_user = await User.findById(to);
   //   const from_user = await User.findById(from);
 
-  //   // //console.log("to_user", to_user);
+  //   console.log("to_user", to_user);
 
   //   // send notification to receiver of call
   //   io.to(to_user?.socket_id).emit("audio_call_notification", {
@@ -259,7 +258,7 @@ io.on("connection", async (socket) => {
 
   // // handle audio_call_not_picked
   // socket.on("audio_call_not_picked", async (data) => {
-  //   //console.log(data);
+  //   console.log(data);
   //   // find and update call record
   //   const { to, from } = data;
 
@@ -346,12 +345,12 @@ io.on("connection", async (socket) => {
   // socket.on("start_video_call", async (data) => {
   //   const { from, to, roomID } = data;
 
-  //   // //console.log(data);
+  //   console.log(data);
 
   //   const to_user = await User.findById(to);
   //   const from_user = await User.findById(from);
 
-  //   // //console.log("to_user", to_user);
+  //   console.log("to_user", to_user);
 
   //   // send notification to receiver of call
   //   io.to(to_user?.socket_id).emit("video_call_notification", {
@@ -365,7 +364,7 @@ io.on("connection", async (socket) => {
 
   // // handle video_call_not_picked
   // socket.on("video_call_not_picked", async (data) => {
-  //   // //console.log(data);
+  //   console.log(data);
   //   // find and update call record
   //   const { to, from } = data;
 
@@ -457,14 +456,20 @@ io.on("connection", async (socket) => {
 
   //   // broadcast to all conversation rooms of this user that this user is offline (disconnected)
 
-  //   // //console.log("closing connection");
+  //   console.log("closing connection");
   //   socket.disconnect(0);
   // });
 });
 
+// io.on("connection", async (socket) => {
+//   socket.on("hello", (data) => {
+//   console.log(data);
+//   })
+// })
+
 process.on("unhandledRejection", (err) => {
-  //console.log(err);
-  //console.log("UNHANDLED REJECTION! Shutting down ...");
+  console.log(err);
+  console.log("UNHANDLED REJECTION! Shutting down ...");
   server.close(() => {
     process.exit(1); //  Exit Code 1 indicates that a container shut down, either because of an application failure.
   });

@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const otpGenerator = require("otp-generator");
-const mailService = require("../services/mailer");
+// const mailService = require("../services/mailer");
 const crypto = require("crypto");
 
 const nodemailer = require("nodemailer");
@@ -86,14 +86,7 @@ exports.sendOTP = catchAsync(async (req, res, next) => {
       return process.exit(1);
     }
   });
-  
-  // mailService.sendEmail({
-  //   from: "shreyanshshah242@gmail.com",
-  //   to: user.email,
-  //   subject: "Verification OTP",
-  //   html: otp(user.firstName, new_otp),
-  //   attachments: [],
-  // });
+
 
   res.status(200).json({
     status: "success",

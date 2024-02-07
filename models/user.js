@@ -28,6 +28,12 @@ const userSchema = new mongoose.Schema({
       message: (props) => `Email (${props.value}) is invalid!`,
     },
   },
+  friends: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+    },
+  ],
   password: {
     // unselect
     type: String,

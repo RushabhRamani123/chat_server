@@ -15,7 +15,6 @@ router.get("/get-all-verified-users", authController.protect, userController.get
 router.get("/get-users", authController.protect, userController.getUsers);
 router.get("/get-requests", authController.protect, userController.getRequests);
 router.get("/get-friends", authController.protect, userController.getFriends);
-
 router.post("/start-audio-call", authController.protect, userController.startAudioCall);
 router.post("/start-video-call", authController.protect, userController.startVideoCall);
 
