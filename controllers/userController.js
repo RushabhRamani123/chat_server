@@ -12,8 +12,10 @@ const { generateToken04 } = require("./zegoServerAssistant");
 const appID = process.env.ZEGO_APP_ID; // type: number
 
 // Please change serverSecret to your serverSecret, serverSecret is string
+
 // Example：'sdfsdfsd323sdfsdf'
-const serverSecret = process.env.ZEGO_SERVER_SECRET; // type: 32 byte length string
+
+const serverSecret = process.env.ZEGO_SERVER_SECRET;// type: 32 byte length string
 
 exports.getMe = catchAsync(async (req, res, next) => {
   res.status(200).json({
@@ -49,15 +51,13 @@ exports.getUsers = catchAsync(async (req, res, next) => {
   
   const remaining_users = all_users.filter(
     (user) =>
-      this_user.friends.includes(user._id) &&
+      !this_user.friends.includes(user._id) &&
       user._id.toString() !== req.user._id.toString()
   );
     console.log(remaining_users);
   res.status(200).json({
     status: "success",
-    fr: this_user.friends,
     id: req.user._id,
-    data: remaining_users,
     message: "Users found successfully!",
   });
 });
