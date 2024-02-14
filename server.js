@@ -42,31 +42,36 @@ server.listen(port, () => {
   console.log(`App running on port ${port} ...`);
 });
 
+
+
 // Add this
 // Listen for when the client connects via socket.io-client
 io.on("connection", async (socket) => {
-  // console.log(JSON.stringify(socket.handshake.query));
+  console.log(JSON.stringify(socket.handshake.query));
+  const user_id = socket.handshake.query["user_id"];
 
-  // const user_id = socket.handshake.query["user_id"];
-  // console.log("USER ID",user_id);
-  // console.log(`User connected ${socket.id}`);
+  console.log(`User connected ${socket.id}`);
 
-  // if (user_id != null && Boolean(user_id)) {
-  //   try {
-  //     User.findByIdAndUpdate(user_id, {
-  //       socket_id: socket.id,
-  //       status: "Online",
-  //     });
-  //   } catch (e) {
-  //     console.log(e);
-  //   }
-  // }
+  if (user_id != null && Boolean(user_id)) {
+    console.log("This is the socket id:"+ socket.id )
+    try {
+      User.findByIdAndUpdate(user_id, {
+        socket_id: socket.id,
+        status: "Online",
+      }).then(async() => {
+        const id = await User.findById(user_id).select("socket_id"); 
+        console.log("This is the socket id:"+ id.socket_id)
+      });
+    } catch (e) {
+      console.log(e);
+    }
+  }
 
   // We can write our socket event listeners in here...
   socket.on("friend_request", async (data) => {
     const to = await User.findById(data.to).select("socket_id");
     const from = await User.findById(data.from).select("socket_id");
-      console.log(data.to, "TO AND FROM");
+
     // create a friend request
     await FriendRequest.create({
       sender: data.from,
@@ -80,6 +85,7 @@ io.on("connection", async (socket) => {
       message: "Request Sent successfully!",
     });
   });
+
   socket.on("accept_request", async (data) => {
     // accept friend request => add ref of each other in friends array
     console.log(data);
@@ -89,8 +95,6 @@ io.on("connection", async (socket) => {
 
     const sender = await User.findById(request_doc.sender);
     const receiver = await User.findById(request_doc.recipient);
-    console.log(" RECEIVER "+receiver);
-    console.log(" SENDER "+sender);
 
     sender.friends.push(request_doc.recipient);
     receiver.friends.push(request_doc.sender);
@@ -100,6 +104,10 @@ io.on("connection", async (socket) => {
 
     await FriendRequest.findByIdAndDelete(data.request_id);
 
+    // delete this request doc
+    // emit event to both of them
+
+    // emit event request accepted to both
     io.to(sender?.socket_id).emit("request_accepted", {
       message: "Friend Request Accepted",
     });
@@ -107,30 +115,31 @@ io.on("connection", async (socket) => {
       message: "Friend Request Accepted",
     });
   });
-  socket.on("get_direct_conversations", async ({ user_id }, callback) => {
 
+  socket.on("get_direct_conversations", async ({ user_id }, callback) => {
     const existing_conversations = await OneToOneMessage.find({
       participants: { $all: [user_id] },
     }).populate("participants", "firstName lastName avatar _id email status");
 
     // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
-    console.log("Existing Conversation");
+
     console.log(existing_conversations);
 
     callback(existing_conversations);
   });
+
   socket.on("start_conversation", async (data) => {
     // data: {to: from:}
 
     const { to, from } = data;
 
     // check if there is any existing conversation
-    console.log(to, from);
+
     const existing_conversations = await OneToOneMessage.find({
       participants: { $size: 2, $all: [to, from] },
     }).populate("participants", "firstName lastName _id email status");
 
-    console.log(existing_conversations, "Existing Conversation");
+    console.log(existing_conversations[0], "Existing Conversation");
 
     // if no => create a new OneToOneMessage doc & emit event "start_chat" & send conversation details as payload
     if (existing_conversations.length === 0) {
@@ -138,16 +147,21 @@ io.on("connection", async (socket) => {
         participants: [to, from],
       });
 
-      new_chat = await OneToOneMessage.findById(new_chat).populate("participants","firstName lastName _id email status");
+      new_chat = await OneToOneMessage.findById(new_chat).populate(
+        "participants",
+        "firstName lastName _id email status"
+      );
 
       console.log(new_chat);
 
       socket.emit("start_chat", new_chat);
     }
+    // if yes => just emit event "start_chat" & send conversation details as payload
     else {
       socket.emit("start_chat", existing_conversations[0]);
     }
   });
+
   socket.on("get_messages", async (data, callback) => {
     try {
       const { messages } = await OneToOneMessage.findById(
@@ -158,6 +172,7 @@ io.on("connection", async (socket) => {
       console.log(error);
     }
   });
+
   // Handle incoming text/link messages
   socket.on("text_message", async (data) => {
     console.log("Received message:", data);
@@ -170,7 +185,8 @@ io.on("connection", async (socket) => {
     const from_user = await User.findById(from);
 
     // message => {to, from, type, created_at, text, file}
-
+    console.log(to_user)
+    console.log(from_user)
     const new_message = {
       to: to,
       from: from,
@@ -178,26 +194,28 @@ io.on("connection", async (socket) => {
       created_at: Date.now(),
       text: message,
     };
-
+    console.log(conversation_id);  
     // fetch OneToOneMessage Doc & push a new message to existing conversation
     const chat = await OneToOneMessage.findById(conversation_id);
     chat.messages.push(new_message);
     // save to db`
     await chat.save({ new: true, validateModifiedOnly: true });
-
+    console.log("this is the socket id ");
     // emit incoming_message -> to user
-
-    io.to(to_user?.socket_id).emit("new_message", {
+    console.log(to_user.socket_id);
+    console.log(from_user.socket_id);
+    io.to(to_user.socket_id).emit("new_message", {
       conversation_id,
       message: new_message,
     });
 
     // emit outgoing_message -> from user
-    io.to(from_user?.socket_id).emit("new_message", {
+    io.to(from_user.socket_id).emit("new_message", {
       conversation_id,
       message: new_message,
     });
   });
+
   // handle Media/Document Message
   socket.on("file_message", (data) => {
     console.log("Received message:", data);
@@ -224,7 +242,7 @@ io.on("connection", async (socket) => {
   });
 
   // -------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //
-  
+
   // handle start_audio_call event
   socket.on("start_audio_call", async (data) => {
     const { from, to, roomID } = data;
@@ -432,6 +450,9 @@ io.on("connection", async (socket) => {
       to,
     });
   });
+ socket.on("createGroup", async (data) => {
+   console.log(data)
+ })
 
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
 
@@ -448,12 +469,6 @@ io.on("connection", async (socket) => {
     socket.disconnect(0);
   });
 });
-
-io.on("connection", async (socket) => {
-  socket.on("hello", (data) => {
-  console.log(data);
-  })
-})
 
 process.on("unhandledRejection", (err) => {
   console.log(err);

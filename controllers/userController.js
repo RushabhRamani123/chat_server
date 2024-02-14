@@ -57,6 +57,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     console.log(remaining_users);
   res.status(200).json({
     status: "success",
+    data: remaining_users,
     id: req.user._id,
     message: "Users found successfully!",
   });
