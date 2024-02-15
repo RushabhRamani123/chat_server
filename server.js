@@ -21,7 +21,7 @@ const FriendRequest = require("./models/friendRequest");
 const OneToOneMessage = require("./models/OneToOneMessage");
 const AudioCall = require("./models/audioCall");
 const VideoCall = require("./models/videoCall");
-
+const GroupChat = require("./models/groupChats");
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:3001",
@@ -450,9 +450,19 @@ io.on("connection", async (socket) => {
       to,
     });
   });
- socket.on("createGroup", async (data) => {
-   console.log(data)
- })
+  socket.on("createGroup", async (data) => {
+    try {
+      const group = new GroupChat({
+        group_name: data.title,
+        participants: data.members.map((id) => new mongoose.Types.ObjectId(id)),
+      });
+  
+      await group.save();
+      console.log("Group created:", group);
+    } catch (error) {
+      console.error("Error creating group:", error);
+    }
+  });
 
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
 
