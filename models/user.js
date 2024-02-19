@@ -77,7 +77,11 @@ const userSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ["Online", "Offline"]
-  }
+  },
+  group:[{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "GroupChat"
+  }]
 });
 
 userSchema.pre("save", async function (next) {

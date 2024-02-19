@@ -2,6 +2,7 @@ const AudioCall = require("../models/audioCall");
 const FriendRequest = require("../models/friendRequest");
 const User = require("../models/user");
 const VideoCall = require("../models/videoCall");
+const GroupChat = require("../models/groupChats");
 const catchAsync = require("../utils/catchAsync.js");
 const filterObj = require("../utils/filterObj");
 
@@ -16,14 +17,12 @@ const appID = process.env.ZEGO_APP_ID; // type: number
 // Example：'sdfsdfsd323sdfsdf'
 
 const serverSecret = process.env.ZEGO_SERVER_SECRET;// type: 32 byte length string
-
 exports.getMe = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     data: req.user,
   });
 });
-
 exports.updateMe = catchAsync(async (req, res, next) => {
   const filteredBody = filterObj(
     req.body,
@@ -41,7 +40,6 @@ exports.updateMe = catchAsync(async (req, res, next) => {
     message: "User Updated successfully",
   });
 });
-
 exports.getUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
@@ -62,7 +60,6 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     message: "Users found successfully!",
   });
 });
-
 exports.getAllVerifiedUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
@@ -78,7 +75,6 @@ exports.getAllVerifiedUsers = catchAsync(async (req, res, next) => {
     message: "Users found successfully!",
   });
 });
-
 exports.getRequests = catchAsync(async (req, res, next) => {
   const requests = await FriendRequest.find({ recipient: req.user._id })
     .populate("sender")
@@ -90,7 +86,6 @@ exports.getRequests = catchAsync(async (req, res, next) => {
     message: "Requests found successfully!",
   });
 });
-
 exports.getFriends = catchAsync(async (req, res, next) => {
   const this_user = await User.findById(req.user._id).populate(
     "friends",
@@ -102,11 +97,6 @@ exports.getFriends = catchAsync(async (req, res, next) => {
     message: "Friends found successfully!",
   });
 });
-
-/**
- * Authorization authentication token generation
- */
-
 exports.generateZegoToken = catchAsync(async (req, res, next) => {
   try {
     const { userId, room_id } = req.body;
@@ -142,7 +132,6 @@ exports.generateZegoToken = catchAsync(async (req, res, next) => {
     console.log(err);
   }
 });
-
 exports.startAudioCall = catchAsync(async (req, res, next) => {
   const from = req.user._id;
   const to = req.body.id;
@@ -168,7 +157,6 @@ exports.startAudioCall = catchAsync(async (req, res, next) => {
     },
   });
 });
-
 exports.startVideoCall = catchAsync(async (req, res, next) => {
   const from = req.user._id;
   const to = req.body.id;
@@ -194,7 +182,6 @@ exports.startVideoCall = catchAsync(async (req, res, next) => {
     },
   });
 });
-
 exports.getCallLogs = catchAsync(async (req, res, next) => {
   const user_id = req.user._id;
 
@@ -274,5 +261,18 @@ exports.getCallLogs = catchAsync(async (req, res, next) => {
     status: "success",
     message: "Call Logs Found successfully!",
     data: call_logs,
+  });
+});
+exports.getGroupChats = catchAsync(async (req, res, next) => {
+  const group = req.body.data;
+  const results = await Promise.all(group.map(async (groupId) => {
+    const data = await GroupChat.findById(groupId);
+    return data;
+  }));
+
+  res.status(200).json({
+      status: "success",
+      message: "Group Chats Found successfully!",
+      data: results
   });
 });

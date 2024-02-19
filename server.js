@@ -10,10 +10,8 @@ process.on("uncaughtException", (err) => {
 });
 
 const app = require("./app");
-
 const http = require("http");
 const server = http.createServer(app);
-
 const { Server } = require("socket.io"); // Add this
 const { promisify } = require("util");
 const User = require("./models/user");
@@ -35,15 +33,11 @@ mongoose.connect
   .then(() => { console.log("Database connected"); })
   .catch((err) => { console.log(err); });
 
-
 const port = process.env.PORT || 8000;
 
 server.listen(port, () => {
   console.log(`App running on port ${port} ...`);
 });
-
-
-
 // Add this
 // Listen for when the client connects via socket.io-client
 io.on("connection", async (socket) => {
@@ -51,7 +45,6 @@ io.on("connection", async (socket) => {
   const user_id = socket.handshake.query["user_id"];
 
   console.log(`User connected ${socket.id}`);
-
   if (user_id != null && Boolean(user_id)) {
     console.log("This is the socket id:"+ socket.id )
     try {
@@ -66,7 +59,6 @@ io.on("connection", async (socket) => {
       console.log(e);
     }
   }
-
   // We can write our socket event listeners in here...
   socket.on("friend_request", async (data) => {
     const to = await User.findById(data.to).select("socket_id");
@@ -85,7 +77,6 @@ io.on("connection", async (socket) => {
       message: "Request Sent successfully!",
     });
   });
-
   socket.on("accept_request", async (data) => {
     // accept friend request => add ref of each other in friends array
     console.log(data);
@@ -115,7 +106,6 @@ io.on("connection", async (socket) => {
       message: "Friend Request Accepted",
     });
   });
-
   socket.on("get_direct_conversations", async ({ user_id }, callback) => {
     const existing_conversations = await OneToOneMessage.find({
       participants: { $all: [user_id] },
@@ -127,7 +117,6 @@ io.on("connection", async (socket) => {
 
     callback(existing_conversations);
   });
-
   socket.on("start_conversation", async (data) => {
     // data: {to: from:}
 
@@ -161,7 +150,6 @@ io.on("connection", async (socket) => {
       socket.emit("start_chat", existing_conversations[0]);
     }
   });
-
   socket.on("get_messages", async (data, callback) => {
     try {
       const { messages } = await OneToOneMessage.findById(
@@ -172,7 +160,6 @@ io.on("connection", async (socket) => {
       console.log(error);
     }
   });
-
   // Handle incoming text/link messages
   socket.on("text_message", async (data) => {
     console.log("Received message:", data);
@@ -215,7 +202,6 @@ io.on("connection", async (socket) => {
       message: new_message,
     });
   });
-
   // handle Media/Document Message
   socket.on("file_message", (data) => {
     console.log("Received message:", data);
@@ -240,9 +226,7 @@ io.on("connection", async (socket) => {
 
     // emit outgoing_message -> from user
   });
-
   // -------------- HANDLE AUDIO CALL SOCKET EVENTS ----------------- //
-
   // handle start_audio_call event
   socket.on("start_audio_call", async (data) => {
     const { from, to, roomID } = data;
@@ -261,7 +245,6 @@ io.on("connection", async (socket) => {
       userName: to,
     });
   });
-
   // handle audio_call_not_picked
   socket.on("audio_call_not_picked", async (data) => {
     console.log(data);
@@ -283,7 +266,6 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // handle audio_call_accepted
   socket.on("audio_call_accepted", async (data) => {
     const { to, from } = data;
@@ -304,7 +286,6 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // handle audio_call_denied
   socket.on("audio_call_denied", async (data) => {
     // find and update call record
@@ -325,7 +306,6 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // handle user_is_busy_audio_call
   socket.on("user_is_busy_audio_call", async (data) => {
     const { to, from } = data;
@@ -344,9 +324,7 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // --------------------- HANDLE VIDEO CALL SOCKET EVENTS ---------------------- //
-
   // handle start_video_call event
   socket.on("start_video_call", async (data) => {
     const { from, to, roomID } = data;
@@ -367,7 +345,6 @@ io.on("connection", async (socket) => {
       userName: to,
     });
   });
-
   // handle video_call_not_picked
   socket.on("video_call_not_picked", async (data) => {
     console.log(data);
@@ -389,7 +366,6 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // handle video_call_accepted
   socket.on("video_call_accepted", async (data) => {
     const { to, from } = data;
@@ -410,7 +386,6 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // handle video_call_denied
   socket.on("video_call_denied", async (data) => {
     // find and update call record
@@ -431,7 +406,6 @@ io.on("connection", async (socket) => {
       to,
     });
   });
-
   // handle user_is_busy_video_call
   socket.on("user_is_busy_video_call", async (data) => {
     const { to, from } = data;
@@ -456,25 +430,21 @@ io.on("connection", async (socket) => {
         group_name: data.title,
         participants: data.members.map((id) => new mongoose.Types.ObjectId(id)),
       });
-  
       await group.save();
+      const user = await User.findById(user_id);
+      user.group.push(group._id);
+      await user.save();
       console.log("Group created:", group);
     } catch (error) {
       console.error("Error creating group:", error);
     }
   });
-
+  
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
-
   socket.on("end", async (data) => {
-    // Find user by ID and set status as offline
-
     if (data.user_id) {
       await User.findByIdAndUpdate(data.user_id, { status: "Offline" });
     }
-
-    // broadcast to all conversation rooms of this user that this user is offline (disconnected)
-
     console.log("closing connection");
     socket.disconnect(0);
   });
