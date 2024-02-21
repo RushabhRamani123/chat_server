@@ -263,16 +263,20 @@ exports.getCallLogs = catchAsync(async (req, res, next) => {
     data: call_logs,
   });
 });
-exports.getGroupChats = catchAsync(async (req, res, next) => {
-  const group = req.body.data;
-  const results = await Promise.all(group.map(async (groupId) => {
-    const data = await GroupChat.findById(groupId);
-    return data;
-  }));
 
-  res.status(200).json({
-      status: "success",
-      message: "Group Chats Found successfully!",
-      data: results
-  });
-});
+//   const group = req.body.data;
+
+//   // Without Promise.all, the code will continue executing and the
+//   // response will be sent back to the client before all the data is fetched
+//   const result = group.map(async (groupId) => {
+//     const data = await GroupChat.findById(groupId);
+//     console.log("This is the user" + data);
+//     return data;
+//   });
+
+//   res.status(200).json({
+//       status: "success",
+//       message: "Group Chats Found successfully!",
+//       data: result
+//   });
+// });

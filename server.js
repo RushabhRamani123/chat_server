@@ -41,6 +41,7 @@ server.listen(port, () => {
 // Add this
 // Listen for when the client connects via socket.io-client
 io.on("connection", async (socket) => {
+  console.log("New connection");
   console.log(JSON.stringify(socket.handshake.query));
   const user_id = socket.handshake.query["user_id"];
 
@@ -152,9 +153,7 @@ io.on("connection", async (socket) => {
   });
   socket.on("get_messages", async (data, callback) => {
     try {
-      const { messages } = await OneToOneMessage.findById(
-        data.conversation_id
-      ).select("messages");
+      const { messages } = await OneToOneMessage.findById(data.conversation_id).select("messages");
       callback(messages);
     } catch (error) {
       console.log(error);
@@ -424,6 +423,7 @@ io.on("connection", async (socket) => {
       to,
     });
   });
+  /*--------------------------------------------------------- Group -------------------------------------------------------------------------*/
   socket.on("createGroup", async (data) => {
     try {
       const group = new GroupChat({
@@ -439,7 +439,58 @@ io.on("connection", async (socket) => {
       console.error("Error creating group:", error);
     }
   });
+  socket.on("get_group", async (callback) => {
+    const existing_conversations = await GroupChat.find({
+      participants: { $all: [user_id] },
+    }).populate("participants", "group_name");
+
+    // db.books.find({ authors: { $elemMatch: { name: "John Smith" } } })
+
+    console.log(existing_conversations);
+
+    callback(existing_conversations);
+  });
+  socket.on("get_group_messages", async (data, callback) => {
+    try {
+      console.log(data);
+      const { messages } = await GroupChat.findById(data.conversation_id).select("messages");
+      callback(messages);
+    } catch (error) {
+      console.log(error);
+    }
+  })
+  socket.on("group_text_message", async (data) => {
+    console.log("Received message:", data);
   
+    const { message, conversation_id, from, to, type } = data;
+  
+    if (message) {
+      const new_message = {
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: message,
+      };
+  
+      const chat = await GroupChat.findById(conversation_id);
+      chat.messages.push(new_message);
+      const res = await chat.save({ new: true, validateModifiedOnly: true });
+  
+      const to_user_promises = to.map(async (id) => await User.findById(id));
+      const to_users = await Promise.all(to_user_promises);
+
+      console.log("therefore the promise is reached : "+to_users);
+
+      to_users.forEach((user) => {
+        io.to(user.socket_id).emit("group_new_message", {
+          conversation_id,
+          message: new_message,
+        });
+      });
+      console.log ("message sent to : ");
+
+    }
+  });
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
   socket.on("end", async (data) => {
     if (data.user_id) {
