@@ -165,7 +165,7 @@ io.on("connection", async (socket) => {
 
     // data: {to, from, text}
 
-    const { message, conversation_id, from, to, type } = data;
+    const { message, conversation_id, from, to, type , reply } = data;
 
     const to_user = await User.findById(to);
     const from_user = await User.findById(from);
@@ -173,13 +173,28 @@ io.on("connection", async (socket) => {
     // message => {to, from, type, created_at, text, file}
     console.log(to_user)
     console.log(from_user)
-    const new_message = {
+    let new_message = {};
+    if (type == "reply") {
+       new_message = {
+        to: to,
+        from: from,
+        type: type,
+        created_at: Date.now(),
+        text: message,
+        reply: reply, 
+      }
+    }
+    else {
+      new_message = {
       to: to,
       from: from,
       type: type,
       created_at: Date.now(),
       text: message,
-    };
+      };
+    }
+    
+    console.log("This is the new message"+new_message)
     console.log(conversation_id);  
     // fetch OneToOneMessage Doc & push a new message to existing conversation
     const chat = await OneToOneMessage.findById(conversation_id);
@@ -462,17 +477,31 @@ io.on("connection", async (socket) => {
   socket.on("group_text_message", async (data) => {
     console.log("Received message:", data);
   
-    const { message, conversation_id, from, to, type } = data;
+    const { message, conversation_id, from, to, type , reply } = data;
   
     if (message) {
-      const new_message = {
-        from: from,
-        type: type,
-        created_at: Date.now(),
-        text: message,
-      };
+      let new_message = {};
+      if (type === "reply") {
+        new_message = {
+          to: to,
+          from: from,
+          type: type,
+          created_at: Date.now(),
+          text: message,
+          reply: reply, 
+        }
+      }
+      else {   
+         new_message = {
+          from: from,
+          type: type,
+          created_at: Date.now(),
+          text: message,
+        };
+      }
   
       const chat = await GroupChat.findById(conversation_id);
+      console.log(chat);
       chat.messages.push(new_message);
       const res = await chat.save({ new: true, validateModifiedOnly: true });
   
@@ -492,12 +521,10 @@ io.on("connection", async (socket) => {
     }
   });
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
-  socket.on("end", async (data) => {
-    if (data.user_id) {
-      await User.findByIdAndUpdate(data.user_id, { status: "Offline" });
-    }
-    console.log("closing connection");
-    socket.disconnect(0);
+socket.on("end", async (data) => {
+    if (data.user_id) {await User.findByIdAndUpdate(data.user_id, { status: "Offline" });}
+      console.log("closing connection");
+      socket.disconnect(0);
   });
 });
 

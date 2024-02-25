@@ -249,12 +249,27 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
     console.log(resetURL);
 
-    mailService.sendEmail({
-      from: "shreyanshshah242@gmail.com",
-      to: user.email,
-      subject: "Reset Password",
-      html: resetPassword(user.firstName, resetURL),
-      attachments: [],
+    let transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+          user: 'rushabhramani16@gmail.com',
+          pass: 'fkoc afsw zcli psue'
+      }
+    });
+    console.log(user.email);
+    let message = {
+      from: 'rushabhramani16@gmail.com',
+      to:user.email,
+      subject: 'OTP for Email Verification',
+      text: 'Hello to myself!',
+      html: otp(user.firstName, resetURL),
+  };
+  
+    transporter.sendMail(message, (err) => {
+      if (err) {
+        console.log('Error occurred. ' + err.message);
+        return process.exit(1);
+      }
     });
 
     res.status(200).json({

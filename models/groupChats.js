@@ -18,13 +18,16 @@ const groupChatSchema = new mongoose.Schema({
         },
         type: {
           type: String,
-          enum: ["Text", "Media", "Document", "Link"],
+          enum: ["Text", "Media", "Document", "Link","reply"],
         },
         created_at: {
           type: Date,
           default: Date.now(),
         },
         text: {
+          type: String,
+        },
+        reply: {
           type: String,
         },
         file: {
