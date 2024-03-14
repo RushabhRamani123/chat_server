@@ -78,12 +78,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["Online", "Offline"]
   },
-  group:[{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "GroupChat"
-  }]
 });
-
 userSchema.pre("save", async function (next) {
   // Only run this function if password was actually modified
   if (!this.isModified("otp") || !this.otp) return next();
@@ -95,7 +90,6 @@ userSchema.pre("save", async function (next) {
 
   next();
 });
-
 userSchema.pre("save", async function (next) {
   // Only run this function if password was actually modified
   if (!this.isModified("password") || !this.password) return next();
@@ -107,7 +101,6 @@ userSchema.pre("save", async function (next) {
 
   next();
 });
-
 userSchema.pre("save", function (next) {
   if (!this.isModified("password") || this.isNew || !this.password)
     return next();
@@ -115,18 +108,15 @@ userSchema.pre("save", function (next) {
   this.passwordChangedAt = Date.now() - 1000;
   next();
 });
-
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
-
 userSchema.methods.correctOTP = async function (candidateOTP, userOTP) {
   return await bcrypt.compare(candidateOTP, userOTP);
 };
-
 userSchema.methods.changedPasswordAfter = function (JWTTimeStamp) {
   if (this.passwordChangedAt) {
     const changedTimeStamp = parseInt(
@@ -139,7 +129,6 @@ userSchema.methods.changedPasswordAfter = function (JWTTimeStamp) {
   // FALSE MEANS NOT CHANGED
   return false;
 };
-
 userSchema.methods.createPasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
 
@@ -152,6 +141,5 @@ userSchema.methods.createPasswordResetToken = function () {
 
   return resetToken;
 };
-
 const User = new mongoose.model("User", userSchema);
 module.exports = User;

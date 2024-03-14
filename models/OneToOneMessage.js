@@ -9,6 +9,10 @@ const oneToOneMessageSchema = new mongoose.Schema({
   ],
   messages: [
     {
+      signigicant: {
+        type: String,
+        enum: ["archived", "pinned"],
+      },
       to: {
         type: mongoose.Schema.ObjectId,
         ref: "User",
@@ -34,6 +38,14 @@ const oneToOneMessageSchema = new mongoose.Schema({
       file: {
         type: String,
       },
+      star: [{
+        type: mongoose.Schema.ObjectId,
+      }],
+      deleted: [
+        {
+          type: mongoose.Schema.ObjectId,
+        }
+      ]
     },
   ],
 });

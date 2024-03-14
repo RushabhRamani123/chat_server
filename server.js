@@ -38,8 +38,6 @@ const port = process.env.PORT || 8000;
 server.listen(port, () => {
   console.log(`App running on port ${port} ...`);
 });
-// Add this
-// Listen for when the client connects via socket.io-client
 io.on("connection", async (socket) => {
   console.log("New connection");
   console.log(JSON.stringify(socket.handshake.query));
@@ -153,8 +151,14 @@ io.on("connection", async (socket) => {
   });
   socket.on("get_messages", async (data, callback) => {
     try {
-      const { messages } = await OneToOneMessage.findById(data.conversation_id).select("messages");
-      callback(messages);
+      const messageQuery = await OneToOneMessage.findById(data.conversation_id).select("messages");
+
+if (messageQuery) {
+  const { messages } = messageQuery;
+  callback(messages);
+} else {
+  callback(null);
+}
     } catch (error) {
       console.log(error);
     }
@@ -520,14 +524,46 @@ io.on("connection", async (socket) => {
 
     }
   });
+    /*--------------------------------------t 
+    ------------------- HANDLE CONVERSATION AND MESSAGES -------------------------------------------------------------------------*/
+  socket.on("starmessage", async (data) => {
+    console.log("Received message:", data);
+    // const messageId = id;
+  const { id } = data.Detail.message;
+    //   // replace with the actual message _id
+    console.log(id);
+   const messageId = user_id;
+      await OneToOneMessage.updateOne(
+        { "messages._id": id }, // match the document with the given message _id
+        { $push: { "messages.$.star": messageId } } // push the message _id to the star array
+      ).then(() => {
+        console.log('Message _id pushed to star array');
+      }).catch((err) => {
+        console.error(err);
+      });
+    });
+  socket.on("deletemessage", async (data) => {
+    console.log("Received message:", data);
+    const { id, type, subtype, message, incoming, outgoing } = data;
+    // you have to find the id of the message and delete it from the database
+  })
+  // socket.on("forwardmessage", async (data) => {
+  //   console.log("Received message:", data);
+  //   // you will be provided with the list of id you just have to send the message to the id
+  // })
+  // /*--------------------------------------------------------- PINNED AND ARCHIVED -------------------------------------------------------------------------*/
+  // socket.io("pinmessage", async (data) => {
+  //   console.log("Received message:", data);
+  // })
+  // socket.on("archiveconversation", async (data) => {
+    
+  // })
+  
   // -------------- HANDLE SOCKET DISCONNECTION ----------------- //
 socket.on("end", async (data) => {
     if (data.user_id) {await User.findByIdAndUpdate(data.user_id, { status: "Offline" });}
-      console.log("closing connection");
-      socket.disconnect(0);
   });
 });
-
 process.on("unhandledRejection", (err) => {
   console.log(err);
   console.log("UNHANDLED REJECTION! Shutting down ...");
