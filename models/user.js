@@ -78,6 +78,9 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ["Online", "Offline"]
   },
+  blocked: [{
+   type: mongoose.Types.ObjectId 
+  }]
 });
 userSchema.pre("save", async function (next) {
   // Only run this function if password was actually modified

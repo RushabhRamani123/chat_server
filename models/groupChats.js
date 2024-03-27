@@ -18,7 +18,7 @@ const groupChatSchema = new mongoose.Schema({
         },
         type: {
           type: String,
-          enum: ["Text", "Media", "Document", "Link","reply"],
+          enum: ["Text", "Media", "Document", "Link","reply","divider"],
         },
         created_at: {
           type: Date,
@@ -33,8 +33,12 @@ const groupChatSchema = new mongoose.Schema({
         file: {
           type: String,
         },
-      },
-    ],
+        star: [{
+          type: mongoose.Schema.ObjectId,
+        }]}],
+  divider:[ {
+    time:{type: Date,}
+  }],
   });
   
   const GroupChat = new mongoose.model("GroupChat", groupChatSchema);

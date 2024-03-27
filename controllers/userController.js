@@ -43,7 +43,7 @@ exports.updateMe = catchAsync(async (req, res, next) => {
 exports.getUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
-  }).select("firstName lastName _id");
+  }).select("firstName lastName _id blocked");
 
   const this_user = req.user;
   
@@ -63,8 +63,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 exports.getAllVerifiedUsers = catchAsync(async (req, res, next) => {
   const all_users = await User.find({
     verified: true,
-  }).select("firstName lastName _id");
-
+  }).select("firstName lastName _id blocked");
   const remaining_users = all_users.filter(
     (user) => user._id.toString() !== req.user._id.toString()
   );
@@ -89,7 +88,7 @@ exports.getRequests = catchAsync(async (req, res, next) => {
 exports.getFriends = catchAsync(async (req, res, next) => {
   const this_user = await User.findById(req.user._id).populate(
     "friends",
-    "_id firstName lastName"
+    "_id firstName lastName blocked"
   );
   res.status(200).json({
     status: "success",

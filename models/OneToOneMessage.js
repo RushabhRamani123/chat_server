@@ -23,7 +23,7 @@ const oneToOneMessageSchema = new mongoose.Schema({
       },
       type: {
         type: String,
-        enum: ["Text", "Media", "Document", "Link","reply"],
+        enum: ["Text", "Media", "Document", "Link","reply","divider"],
       },
       created_at: {
         type: Date,
@@ -41,13 +41,18 @@ const oneToOneMessageSchema = new mongoose.Schema({
       star: [{
         type: mongoose.Schema.ObjectId,
       }],
-      deleted: [
-        {
+      deleted: [{
           type: mongoose.Schema.ObjectId,
-        }
-      ]
+      }]
     },
   ],
+  divider:[ {
+    time:{type: Date,}
+  }],
+  unread_count:{
+    type: Number,
+    default: 0 
+  }
 });
 
 const OneToOneMessage = new mongoose.model(
